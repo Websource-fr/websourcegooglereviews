@@ -9,7 +9,7 @@
 <section class="crossselling-products block block-section ws-pdp-reviews-fallback">
     <h4 class="section-title"><span>Avis clients</span></h4>
     <div class="block-content">
-        <p class="ws-pdp-reviews-fallback-note">Ce produit n'a pas encore reçu d'avis. Voici ce que disent nos clients de {$shop.name|escape:'html':'UTF-8'} en général :</p>
+        <p class="ws-pdp-reviews-fallback-note">Ce produit n'a pas encore reçu d'avis. Voici ce que disent nos clients en général :</p>
 
         <div class="ws-avis-grid">
             {foreach from=$ws_pdp_picked_reviews item="review"}

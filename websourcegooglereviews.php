@@ -43,7 +43,7 @@ class WebsourceGooglereviews extends Module
     {
         $this->name = 'websourcegooglereviews';
         $this->tab = 'front_office_features';
-        $this->version = '1.2.0';
+        $this->version = '1.2.1';
         $this->author = 'Websource';
         $this->need_instance = 0;
         $this->bootstrap = true;
