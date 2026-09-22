@@ -43,7 +43,7 @@ class WebsourceGooglereviews extends Module
     {
         $this->name = 'websourcegooglereviews';
         $this->tab = 'front_office_features';
-        $this->version = '1.1.0';
+        $this->version = '1.2.0';
         $this->author = 'Websource';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -66,6 +66,12 @@ class WebsourceGooglereviews extends Module
         }
 
         if (!$this->registerHook('moduleRoutes')) {
+            return false;
+        }
+
+        if (!$this->registerHook('displayHeader')
+            || !$this->registerHook('displayProductRating')
+            || !$this->registerHook('displayFooterProduct')) {
             return false;
         }
 
@@ -271,6 +277,134 @@ class WebsourceGooglereviews extends Module
     {
         $slug = Configuration::get(self::CFG_SLUG) ?: 'avis-clients';
         return Context::getContext()->shop->getBaseURL(true) . $slug;
+    }
+
+    // ---------------------------------------------------------------
+    // Product-page fallback (real store reviews shown when a product has
+    // no reviews of its own via iqitreviews). Assigns global Smarty vars
+    // early (displayHeader) so the theme's iqitreviews template overrides
+    // can use them later in the same request — never claims these reviews
+    // are about the specific product, only about the store, to avoid the
+    // kind of mismatched-attribution problem already fixed on the blog.
+    // ---------------------------------------------------------------
+
+    public function hookDisplayHeader($params)
+    {
+        if (!($this->context->controller instanceof ProductControllerCore)) {
+            return;
+        }
+
+        $this->context->controller->registerStylesheet(
+            'ws-avis-css-pdp',
+            'modules/' . $this->name . '/views/css/avis.css',
+            ['media' => 'all', 'priority' => 150]
+        );
+
+        $this->context->smarty->assign([
+            'ws_pdp_aggregate' => self::getAggregate(),
+            'ws_pdp_review_pool' => self::getCompleteReviews(),
+            'ws_pdp_page_url' => self::getPageUrl(),
+        ]);
+    }
+
+    /**
+     * Reviews whose text isn't a truncated preview (no trailing "… Plus"
+     * from a scraped source) — safe to show as a standalone full quote.
+     *
+     * @return array<int, array>
+     */
+    public static function getCompleteReviews()
+    {
+        return array_values(array_filter(self::getReviews(), function ($review) {
+            $text = trim((string) $review['review_text']);
+
+            return $text !== ''
+                && substr($text, -4) !== 'Plus'
+                && strpos($text, '…') === false
+                && (int) $review['rating'] >= 4;
+        }));
+    }
+
+    /**
+     * True when this product already has at least one approved review of
+     * its own (iqitreviews' table, read-only — works whether or not that
+     * module is currently active). Used to decide whether to show the
+     * fallback at all: a product with real reviews of its own never needs
+     * the store-wide fallback.
+     */
+    private static function productHasOwnReview($idProduct)
+    {
+        if (!Db::getInstance()->executeS("SHOW TABLES LIKE '" . _DB_PREFIX_ . "iqitreviews_products'")) {
+            return false;
+        }
+
+        return (bool) Db::getInstance()->getValue(
+            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'iqitreviews_products`
+             WHERE id_product = ' . (int) $idProduct . ' AND status = 1'
+        );
+    }
+
+    /**
+     * Compact star-rating badge near the product title — single product
+     * page only (never on a listing/category grid, so the same badge
+     * doesn't repeat on every miniature).
+     */
+    public function hookDisplayProductRating($params)
+    {
+        $idProduct = isset($params['product']['id_product']) ? (int) $params['product']['id_product'] : 0;
+        if (!$idProduct || self::productHasOwnReview($idProduct)) {
+            return '';
+        }
+
+        $aggregate = self::getAggregate();
+        if ($aggregate['count'] <= 0) {
+            return '';
+        }
+
+        $this->context->smarty->assign([
+            'ws_pdp_aggregate' => $aggregate,
+            'ws_pdp_page_url' => self::getPageUrl(),
+        ]);
+
+        return $this->fetch('module:' . $this->name . '/views/templates/hook/product-rating-fallback.tpl');
+    }
+
+    /**
+     * Main reviews block in the product page footer, shown only when the
+     * product has no review of its own.
+     */
+    public function hookDisplayFooterProduct($params)
+    {
+        $idProduct = isset($params['product']['id_product']) ? (int) $params['product']['id_product'] : 0;
+        if (!$idProduct || self::productHasOwnReview($idProduct)) {
+            return '';
+        }
+
+        $pool = self::getCompleteReviews();
+        if (empty($pool)) {
+            return '';
+        }
+
+        $this->context->controller->registerStylesheet(
+            'ws-avis-css-pdp',
+            'modules/' . $this->name . '/views/css/avis.css',
+            ['media' => 'all', 'priority' => 150]
+        );
+
+        $poolCount = count($pool);
+        $start = $idProduct % $poolCount;
+        $picked = [];
+        for ($i = 0; $i < min(3, $poolCount); $i++) {
+            $picked[] = $pool[($start + $i) % $poolCount];
+        }
+
+        $this->context->smarty->assign([
+            'ws_pdp_aggregate' => self::getAggregate(),
+            'ws_pdp_picked_reviews' => $picked,
+            'ws_pdp_page_url' => self::getPageUrl(),
+        ]);
+
+        return $this->fetch('module:' . $this->name . '/views/templates/hook/product-reviews-fallback.tpl');
     }
 
     // ---------------------------------------------------------------

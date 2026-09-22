@@ -41,6 +41,16 @@ vous importez vos vrais avis, le module s'occupe du reste.
   - Une **note globale manuelle** (note moyenne + nombre d'avis) reste
     disponible en secours, si vous préférez ne publier aucun texte
     d'avis individuel.
+- **Repli automatique sur les fiches produit** (depuis la v1.2.0) : un
+  badge de note et un bloc d'avis s'affichent sur une fiche produit qui
+  n'a pas encore reçu d'avis, en piochant dans votre pool d'avis
+  magasin (uniquement les avis 4-5★ au texte complet, jamais tronqués)
+  — toujours présentés comme des avis sur la boutique en général,
+  jamais comme des avis du produit lui-même, et **sans** émettre de
+  `Review`/`AggregateRating` au niveau produit dans le JSON-LD (un avis
+  boutique attribué à un produit précis serait une donnée structurée
+  trompeuse). Se désactive tout seul dès qu'un produit reçoit son
+  propre avis (compatible avec le module `iqitreviews`, actif ou non).
 
 ## Installation
 

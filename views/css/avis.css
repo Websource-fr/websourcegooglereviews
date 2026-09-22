@@ -99,3 +99,26 @@
   font-size: 12px;
   color: #999;
 }
+
+/* Product-page fallback (product has no review of its own) */
+.ws-pdp-store-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-pdp-store-rating-link {
+  color: #666;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.ws-pdp-reviews-fallback-note {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.ws-pdp-reviews-fallback-link {
+  margin-top: 16px;
+}
