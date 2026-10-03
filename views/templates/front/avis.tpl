@@ -15,7 +15,7 @@
 {/block}
 
 {block name='page_content'}
-<div class="ws-avis-page">
+<div class="ws-avis-page ws-theme-{$ws_theme|default:'other'|escape:'html':'UTF-8'}">
 
   <div class="ws-avis-hero">
     <div class="ws-avis-summary">

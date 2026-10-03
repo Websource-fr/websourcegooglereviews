@@ -1,6 +1,6 @@
 <?php
 /**
- * Public "avis clients" page — real Google reviews + AggregateRating JSON-LD.
+ * Public "avis clients" page — real Google reviews (the aggregate is exposed for the theme's JSON-LD; this controller emits none).
  */
 
 if (!defined('_PS_VERSION_')) {
@@ -34,6 +34,7 @@ class WebsourceGooglereviewsAvisModuleFrontController extends ModuleFrontControl
             'ws_reviews' => $reviews,
             'ws_page_url' => WebsourceGooglereviews::getPageUrl(),
             'ws_shop_name' => $this->context->shop->name,
+            'ws_theme' => WebsourceGooglereviews::themeFamily(),
         ]);
 
         $this->setTemplate('module:websourcegooglereviews/views/templates/front/avis.tpl');

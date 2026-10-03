@@ -2,10 +2,12 @@
 
 Module PrestaShop gratuit qui affiche une vraie page « Avis clients » sur
 votre boutique, à partir de vos propres avis Google (ou de toute autre
-source d'avis), et publie un `AggregateRating` **réel** dans les données
-structurées (schema.org / JSON-LD) — le levier de confiance le plus
-souvent absent des sites e-commerce en matière de SEO/GEO (référencement
-classique et référencement pour les moteurs IA génératifs).
+source d'avis), et calcule une note moyenne (`AggregateRating`) **réelle**,
+prête à être publiée dans les données structurées (schema.org / JSON-LD)
+de votre thème — le levier de confiance le plus souvent absent des sites
+e-commerce en matière de SEO/GEO. **Le module n'émet pas lui-même de
+JSON-LD** : il fournit les valeurs, l'intégration au schéma de votre thème
+est décrite plus bas.
 
 Développé par [Websource](https://www.websource.fr), agence web
 spécialisée PrestaShop et SEO.
@@ -24,9 +26,18 @@ vous importez vos vrais avis, le module s'occupe du reste.
 
 - **Page publique `/avis-clients`** (URL personnalisable), listant vos
   avis individuels — note, auteur, texte, ancienneté.
-- **`AggregateRating` réel** injecté automatiquement sur la page (et
-  prêt à être ajouté à votre schéma `Organization` global — voir
-  [Intégration au schéma global](#intégration-au-schéma-global-organization)).
+- **Note moyenne réelle (`AggregateRating`)** calculée à partir de vos avis
+  et exposée par `WebsourceGooglereviews::getAggregate()` : à brancher
+  dans le JSON-LD de votre thème, par exemple dans votre schéma
+  `Organization` — voir
+  [Intégration au schéma global](#intégration-au-schéma-global-organization).
+  Le module n'ajoute aucun JSON-LD de lui-même.
+- **Compatible thèmes Classic, Hummingbird et Warehouse** (et thèmes
+  enfants) : détection du thème, badge de note sur la fiche produit et
+  bloc d'avis adaptés. Surcharge possible depuis le thème dans
+  `themes/<thème>/modules/websourcegooglereviews/views/templates/`.
+- Encart « accompagnement Websource » dans la page de configuration
+  (super-administrateurs uniquement, masquable 30 jours).
 - **Écran d'import en back office** (Modules > Websource Google Reviews
   > Configurer), trois façons d'alimenter vos avis :
   1. **Coller un export Google** — sélectionnez tout le texte du

@@ -3,7 +3,7 @@
  * product has no review of its own. Never claims the rating is about
  * this specific product — always framed as the store's overall rating.
  *}
-<div class="ws-pdp-store-rating">
+<div class="ws-pdp-store-rating ws-theme-{$ws_theme|default:'other'|escape:'html':'UTF-8'}">
     <span class="ws-avis-stars" aria-hidden="true">
         {section name="s" start=0 loop=5 step=1}{if $smarty.section.s.index < $ws_pdp_aggregate.rating|round}★{else}☆{/if}{/section}
     </span>

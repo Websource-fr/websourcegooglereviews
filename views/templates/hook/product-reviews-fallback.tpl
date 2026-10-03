@@ -6,8 +6,12 @@
  * rating misattributed to one product would be exactly the kind of
  * structured-data mismatch already fixed elsewhere on this site.
  *}
-<section class="crossselling-products block block-section ws-pdp-reviews-fallback">
+<section class="{if $ws_theme == 'classic' || $ws_theme == 'hummingbird'}ws-pdp-own-title{else}crossselling-products block block-section{/if} ws-pdp-reviews-fallback ws-theme-{$ws_theme|default:'other'|escape:'html':'UTF-8'}">
+    {if $ws_theme == 'classic' || $ws_theme == 'hummingbird'}
+    <h2 class="h4 ws-pdp-heading">Avis clients</h2>
+    {else}
     <h4 class="section-title"><span>Avis clients</span></h4>
+    {/if}
     <div class="block-content">
         <p class="ws-pdp-reviews-fallback-note">Ce produit n'a pas encore reçu d'avis. Voici ce que disent nos clients en général :</p>
 

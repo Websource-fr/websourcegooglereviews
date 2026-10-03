@@ -43,7 +43,7 @@ class WebsourceGooglereviews extends Module
     {
         $this->name = 'websourcegooglereviews';
         $this->tab = 'front_office_features';
-        $this->version = '1.2.1';
+        $this->version = '1.3.0';
         $this->author = 'Websource';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -52,7 +52,53 @@ class WebsourceGooglereviews extends Module
         parent::__construct();
 
         $this->displayName = $this->l('Websource Google Reviews');
-        $this->description = $this->l('Page publique d\'avis clients + AggregateRating réel pour les données structurées du site (SEO/GEO).');
+        $this->description = $this->l('Page publique d\'avis clients + note moyenne réelle (AggregateRating) à brancher sur les données structurées de votre thème (SEO/GEO).');
+    }
+
+    /**
+     * Nom du thème actif + de son thème parent, en minuscules (« websourcechild warehouse »).
+     */
+    public static function themeNames()
+    {
+        $shop = Context::getContext()->shop;
+        $t = isset($shop->theme) ? $shop->theme : null;
+        if (!is_object($t) || !method_exists($t, 'getName')) {
+            return '';
+        }
+        $parent = method_exists($t, 'get') ? (string) $t->get('parent') : '';
+
+        return Tools::strtolower($t->getName() . ' ' . $parent);
+    }
+
+    /**
+     * Famille de thème : 'hummingbird', 'warehouse', 'classic' ou 'other'
+     * (thème inconnu : le comportement historique est conservé).
+     * Un thème enfant est reconnu via son parent.
+     */
+    public static function themeFamily()
+    {
+        $n = self::themeNames();
+        if (strpos($n, 'hummingbird') !== false) {
+            return 'hummingbird';
+        }
+        if (strpos($n, 'warehouse') !== false) {
+            return 'warehouse';
+        }
+        if (strpos($n, 'classic') !== false) {
+            return 'classic';
+        }
+
+        return 'other';
+    }
+
+    /**
+     * Le thème appelle-t-il le hook displayProductRating sur la fiche produit ?
+     * (Warehouse oui ; Classic et Hummingbird non : on utilise alors
+     * displayProductAdditionalInfo pour afficher le même badge.)
+     */
+    private static function themeCallsProductRating()
+    {
+        return !in_array(self::themeFamily(), array('classic', 'hummingbird'), true);
     }
 
     public function install()
@@ -71,6 +117,7 @@ class WebsourceGooglereviews extends Module
 
         if (!$this->registerHook('displayHeader')
             || !$this->registerHook('displayProductRating')
+            || !$this->registerHook('displayProductAdditionalInfo')
             || !$this->registerHook('displayFooterProduct')) {
             return false;
         }
@@ -304,6 +351,7 @@ class WebsourceGooglereviews extends Module
             'ws_pdp_aggregate' => self::getAggregate(),
             'ws_pdp_review_pool' => self::getCompleteReviews(),
             'ws_pdp_page_url' => self::getPageUrl(),
+            'ws_theme' => self::themeFamily(),
         ]);
     }
 
@@ -351,6 +399,29 @@ class WebsourceGooglereviews extends Module
      */
     public function hookDisplayProductRating($params)
     {
+        if (!self::themeCallsProductRating()) {
+            // Classic / Hummingbird : le badge est rendu par displayProductAdditionalInfo.
+            return '';
+        }
+
+        return $this->renderRatingBadge($params);
+    }
+
+    /**
+     * Classic et Hummingbird n'appellent pas displayProductRating : le même
+     * badge est affiché via displayProductAdditionalInfo (fiche produit seule).
+     */
+    public function hookDisplayProductAdditionalInfo($params)
+    {
+        if (self::themeCallsProductRating()) {
+            return '';
+        }
+
+        return $this->renderRatingBadge($params);
+    }
+
+    private function renderRatingBadge($params)
+    {
         $idProduct = isset($params['product']['id_product']) ? (int) $params['product']['id_product'] : 0;
         if (!$idProduct || self::productHasOwnReview($idProduct)) {
             return '';
@@ -364,6 +435,7 @@ class WebsourceGooglereviews extends Module
         $this->context->smarty->assign([
             'ws_pdp_aggregate' => $aggregate,
             'ws_pdp_page_url' => self::getPageUrl(),
+            'ws_theme' => self::themeFamily(),
         ]);
 
         return $this->fetch('module:' . $this->name . '/views/templates/hook/product-rating-fallback.tpl');
@@ -402,6 +474,7 @@ class WebsourceGooglereviews extends Module
             'ws_pdp_aggregate' => self::getAggregate(),
             'ws_pdp_picked_reviews' => $picked,
             'ws_pdp_page_url' => self::getPageUrl(),
+            'ws_theme' => self::themeFamily(),
         ]);
 
         return $this->fetch('module:' . $this->name . '/views/templates/hook/product-reviews-fallback.tpl');
@@ -483,7 +556,7 @@ class WebsourceGooglereviews extends Module
             $output .= $this->displayConfirmation($this->l('Avis supprimé.'));
         }
 
-        return $output . $this->renderConfigForm();
+        return $output . $this->supportBlock() . $this->renderConfigForm();
     }
 
     private function renderConfigForm()
@@ -605,5 +678,35 @@ class WebsourceGooglereviews extends Module
           </div>
         </div>
         ';
+    }
+
+    /**
+     * Encart « accompagnement Websource » : uniquement dans le back-office, pour un super-administrateur
+     * connecté (jamais côté boutique ni dans les e-mails). Partial : views/templates/admin/websource_support.tpl
+     * (surchargeable). Seuls le nom du module, sa version, la version de PrestaShop et l'adresse du site
+     * sont transmis, dans l'URL du lien, au clic.
+     *
+     * @return string
+     */
+    public function supportBlock()
+    {
+        $employee = $this->context->employee;
+        if (!defined('_PS_ADMIN_DIR_') || !is_object($employee) || !$employee->id || !$employee->isSuperAdmin()) {
+            return '';
+        }
+        $site = Tools::getShopDomainSsl(true);
+        $base = 'https://www.websource.fr/contact?utm_source=' . rawurlencode($this->name)
+            . '&utm_medium=admin-module&utm_campaign=accompagnement'
+            . '&ws_module=' . rawurlencode($this->name)
+            . '&ws_mv=' . rawurlencode($this->version)
+            . '&ws_cms=prestashop'
+            . '&ws_cmsv=' . rawurlencode(_PS_VERSION_)
+            . '&ws_site=' . rawurlencode($site);
+        $this->context->smarty->assign(array(
+            'ws_support_contact' => $base,
+            'ws_support_rdv' => $base . '&utm_content=rdv',
+        ));
+
+        return $this->context->smarty->fetch($this->local_path . 'views/templates/admin/websource_support.tpl');
     }
 }

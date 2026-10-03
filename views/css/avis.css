@@ -122,3 +122,32 @@
 .ws-pdp-reviews-fallback-link {
   margin-top: 16px;
 }
+
+/* ---- Variantes par thème (Classic / Hummingbird : pas de styles « section-title » Warehouse) ---- */
+.ws-pdp-own-title {
+  margin: 2rem 0 1rem;
+  clear: both;
+}
+
+.ws-pdp-own-title .ws-pdp-heading {
+  font-weight: 700;
+  padding-bottom: .5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid currentColor;
+}
+
+/* Hummingbird (Bootstrap 5) impose parfois la couleur des liens : on garde les nôtres. */
+.ws-theme-hummingbird .ws-pdp-store-rating-link,
+.ws-theme-hummingbird .ws-pdp-reviews-fallback-link a {
+  color: #666 !important;
+}
+
+.ws-theme-hummingbird .ws-avis-card,
+.ws-theme-classic .ws-avis-card {
+  box-sizing: border-box;
+}
+
+.ws-theme-classic .ws-avis-hero h1,
+.ws-theme-hummingbird .ws-avis-hero h1 {
+  line-height: 1.2;
+}
